@@ -10,6 +10,11 @@ export type Person = {
   subRows?: Person[];
 };
 
+export interface PaginationState {
+  pageIndex: number;
+  pageSize: number;
+}
+
 const statuses = ["relationship", "complicated", "single"];
 
 const generatePerson = (): Person => {
