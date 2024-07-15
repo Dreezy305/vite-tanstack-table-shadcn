@@ -1,17 +1,21 @@
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   compareItems,
-  FilterFn,
   RankingInfo,
   rankItem,
 } from "@tanstack/match-sorter-utils";
 import {
   ColumnDef,
   ColumnFiltersState,
+  FilterFn,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   PaginationState,
+  SortingFn,
+  sortingFns,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -36,7 +40,7 @@ function App() {
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const columns = React.useMemo<ColumnDef<Person>[]>(
+  const columns = React.useMemo<ColumnDef<Person, any>[]>(
     () => [
       {
         accessorKey: "firstName",
@@ -75,6 +79,25 @@ function App() {
     []
   );
 
+  const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+    const itemRank = rankItem(row.getValue(columnId), value);
+    addMeta({
+      itemRank,
+    });
+    return itemRank.passed;
+  };
+
+  const fuzzySort: SortingFn<any> = (rowA: any, rowB: any, columnId: any) => {
+    let dir = 0;
+    if (rowA.columnFiltersMeta[columnId]) {
+      dir = compareItems(
+        rowA.columnFiltersMeta[columnId]?.itemRank!,
+        rowB.columnFiltersMeta[columnId]?.itemRank!
+      );
+    }
+    return dir === 0 ? sortingFns.alphanumeric(rowA, rowB, columnId) : dir;
+  };
+
   const table = useReactTable({
     data: generatePeople(200),
     columns,
@@ -85,7 +108,10 @@ function App() {
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
-    // globalFilterFn: "fuzzy",
+    filterFns: {
+      fuzzy: fuzzyFilter,
+    },
+    globalFilterFn: "fuzzy",
     state: { sorting, pagination, globalFilter, columnFilters },
     autoResetPageIndex: false,
     enableSorting: true,
@@ -93,7 +119,10 @@ function App() {
     debugHeaders: true,
     debugColumns: true,
     debugRows: true,
+    enableGlobalFilter: true,
   });
+
+  console.log(globalFilter, "globalFilter");
 
   return (
     <div className="">
@@ -106,7 +135,7 @@ function App() {
             className="peer h-10 w-full rounded-md bg-gray-50 px-4 outline-none drop-shadow-sm transition-all duration-200 ease-in-out border border-solid font-medium placeholder:font-medium"
             placeholder="search..."
             value={globalFilter ?? ""}
-            onChange={(value) => setGlobalFilter(String(value))}
+            onChange={(value) => setGlobalFilter(String(value.target.value))}
           />
         </div>
         <table className="w-full leading-normal shadow-md rounded-lg overflow-hidden">
