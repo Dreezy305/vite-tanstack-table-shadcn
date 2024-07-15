@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  compareItems,
-  RankingInfo,
-  rankItem,
-} from "@tanstack/match-sorter-utils";
+import { rankItem } from "@tanstack/match-sorter-utils";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -14,20 +10,11 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   PaginationState,
-  SortingFn,
-  sortingFns,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import React from "react";
 import { generatePeople, Person } from "./data/data";
-
-interface FilterFns {
-  fuzzy: FilterFn<unknown>;
-}
-interface FilterMeta {
-  itemRank: RankingInfo;
-}
 
 function App() {
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -79,23 +66,12 @@ function App() {
     []
   );
 
-  const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+  const FilterData: FilterFn<any> = (row, columnId, value, addMeta) => {
     const itemRank = rankItem(row.getValue(columnId), value);
     addMeta({
       itemRank,
     });
     return itemRank.passed;
-  };
-
-  const fuzzySort: SortingFn<any> = (rowA: any, rowB: any, columnId: any) => {
-    let dir = 0;
-    if (rowA.columnFiltersMeta[columnId]) {
-      dir = compareItems(
-        rowA.columnFiltersMeta[columnId]?.itemRank!,
-        rowB.columnFiltersMeta[columnId]?.itemRank!
-      );
-    }
-    return dir === 0 ? sortingFns.alphanumeric(rowA, rowB, columnId) : dir;
   };
 
   const table = useReactTable({
@@ -109,7 +85,7 @@ function App() {
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
     filterFns: {
-      fuzzy: fuzzyFilter,
+      fuzzy: FilterData,
     },
     globalFilterFn: "fuzzy",
     state: { sorting, pagination, globalFilter, columnFilters },
